@@ -1,0 +1,94 @@
+#### reading the data
+titanic_train<- read.csv(file = "train.csv",stringsAsFactors = FALSE,header = TRUE)
+titanic_test<- read.csv(file = "test.csv",stringsAsFactors = FALSE,header = TRUE)
+str(titanic_test)
+
+# StringaASFactor will converet all the strings in to categorical format
+ # or
+# titanic_train<-read.csv(file.choose())
+### titanic_train<- read.csv("train.csv")
+tail(titanic_train)
+titanic_test$IsTrainset <- F
+titanic_train$IsTrainset <- T
+ncol(titanic_test)
+ncol(titanic_train)
+names(titanic_test)
+names(titanic_train)
+
+### adding surviver column to the test data set
+titanic_test$Survived <- NA
+ncol(titanic_test)
+names(titanic_test)
+
+## combining test data and train data
+titanic_full <- rbind(titanic_train,titanic_test)
+tail(titanic_full)
+
+### to know how many rows are present for train set and test set
+table(titanic_full$IsTrainset) 
+
+### Handling missing values
+table(titanic_full$Embarked)
+
+## replacing NA values with Mode for Embarked column
+titanic_full[titanic_full$Embarked=='', "Embarked"] <-'S'
+table(titanic_full$Embarked)
+
+## handling missing values of Age column
+table(is.na(titanic_full$Age))
+
+age.median<-median(titanic_full$Age, na.rm = T)
+titanic_full[is.na(titanic_full$Age),"Age"] <- age.median
+
+table(is.na(titanic_full$Age))
+
+## handling missing values of column Fare
+
+table(is.na(titanic_full$Fare))
+Fare.median<-median(titanic_full$Fare, na.rm = T)
+Fare.median
+
+titanic_full[is.na(titanic_full$Fare),"Fare"] <- Fare.median
+
+table(is.na(titanic_full$Fare))
+
+
+#### categorical casting
+titanic_full$Pclass <- as.factor(titanic_full$Pclass)
+titanic_full$Sex <- as.factor(titanic_full$Sex)
+titanic_full$Embarked <- as.factor(titanic_full$Embarked)
+str(titanic_full)
+### splitting the data into train and test
+
+titanic_train<-titanic_full[titanic_full$IsTrainset==T,]
+titanic_test<-titanic_full[titanic_full$IsTrainset == F,]
+
+#### converting the survived column in to categorical variable
+titanic_train$Survived <- as.factor(titanic_train$Survived)
+
+### Building the model
+str(titanic_full)
+survived.equation <- "Survived ~ Pclass + Sex + Age + SibSp + Parch + Fare + Embarked"
+ survived.formula <- as.formula(survived.equation)
+install.packages("randomForest") 
+library(randomForest)
+titanic.model <- randomForest(formula = survived.formula, data = titanic_train, ntree = 500, mtry = 3, nodesize = 0.01 * nrow(titanic_test))
+
+features.equation <-  "Pclass + Sex + Age + SibSp + Parch + Fare + Embarked"
+
+##
+
+Survived <- predict(titanic.model, newdata = titanic_test)
+Survived
+
+
+### Creating new dataset
+
+PassengerId <- titanic_test$PassengerId
+Output.df<-as.data.frame(PassengerId)
+Output.df$ Survived <- Survived
+tail(Output.df)
+
+### createing CSV file for Kaggle submission
+
+write.csv(Output.df, file = "kaggle_submission.csv", row.names = F)
